@@ -378,3 +378,212 @@ Based on installed dependencies, the project appears to be set up for:
   - Use SolidJS patterns (signals, JSX with `class` not `className`)
   - Apply Tailwind utility classes for styling
   - Ensure TypeScript types are properly defined
+
+## Common Pitfalls & Best Practices
+
+### Nostr Protocol Integration
+
+#### WebSocket Subscription Lifecycle
+**❌ WRONG - Finishing immediately on first event:**
+```typescript
+relay.subscribe([filter], {
+  onevent(event) {
+    resolve(event); // ❌ Don't resolve immediately
+  },
+  oneose() {
+    // This might never be reached
+  }
+});
+```
+
+**✅ CORRECT - Wait for EOSE (End of Stored Events):**
+```typescript
+let receivedEvent: Event | null = null;
+
+relay.subscribe([filter], {
+  onevent(event) {
+    receivedEvent = event; // Store the event
+    // Don't finish yet - wait for EOSE
+  },
+  oneose() {
+    resolve(receivedEvent); // Now finish with the stored event
+  }
+});
+```
+
+**Why:**
+- `onevent` fires for each matching event as it arrives
+- `oneose` signals that all stored events matching the filter have been sent
+- For queries with `limit: 1`, you still need to wait for `oneose` to know the query is complete
+
+#### Relay Connection Optimization
+
+**❌ WRONG - Waiting for all relays:**
+```typescript
+const results = await Promise.all(
+  relays.map(url => fetchFromRelay(url))
+);
+```
+
+**✅ CORRECT - Race for first successful response:**
+```typescript
+// Use Promise.race for first response
+const result = await Promise.race(
+  relays.map(url => fetchFromRelay(url))
+    .map(p => p.then(r => r || Promise.reject()))
+);
+
+// Fallback to Promise.all if race fails
+if (!result) {
+  const results = await Promise.all(promises);
+  return results.find(r => r !== null);
+}
+```
+
+**Why:**
+- Nostr is decentralized - multiple relays often have the same data
+- First relay to respond is usually the fastest/closest
+- Significantly improves perceived performance (3-5s → 1-2s)
+
+#### WebSocket Cleanup Patterns
+
+**Best Practice:**
+```typescript
+let subClosed = false;
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+const closeSub = () => {
+  if (subClosed) return; // Prevent duplicate closes
+  subClosed = true;
+  try {
+    sub?.close();
+  } catch {
+    // Ignore "already closed" errors
+  }
+};
+
+try {
+  // ... subscription logic
+} finally {
+  if (timeoutId) clearTimeout(timeoutId);
+  if (relay) {
+    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+    try {
+      relay.close();
+    } catch {
+      // Ignore close errors
+    }
+  }
+}
+```
+
+**Why:**
+- WebSocket can only be closed once
+- Need flags to prevent duplicate close attempts
+- Small delay before relay close prevents race conditions
+
+### SolidJS Reactive Patterns
+
+#### createResource Data Flow
+
+**Common Issue:** Data fetched but UI not updating
+
+**Debug Checklist:**
+1. Check if `resource.loading` transitions from `true` to `false`
+2. Verify `resource()` returns the actual data (not undefined)
+3. Ensure `resource.state` reaches `"ready"` state
+4. Confirm the source signal is properly reactive
+
+**Use createEffect for debugging:**
+```typescript
+createEffect(() => {
+  console.log("Resource state changed:");
+  console.log("- loading:", resource.loading);
+  console.log("- data:", resource());
+  console.log("- state:", resource.state);
+  console.log("- error:", resource.error);
+});
+```
+
+#### Handling Null/Undefined Data in Components
+
+**❌ WRONG - Assuming data always exists:**
+```typescript
+function ProfileCard(props: { profile: Profile }) {
+  return <div>{props.profile.name}</div>; // ❌ Crashes if null
+}
+```
+
+**✅ CORRECT - Graceful handling with fallback UI:**
+```typescript
+function ProfileCard(props: { profile: Profile | null }) {
+  return (
+    <Show
+      when={props.profile !== null && props.profile !== undefined}
+      fallback={<EmptyProfileUI />}
+    >
+      <div>{props.profile.name}</div>
+    </Show>
+  );
+}
+```
+
+**Why:**
+- Network requests can fail
+- Data might not exist on the server
+- Better UX to show meaningful feedback than crash
+
+### Development Workflow
+
+#### Editor Diagnostics vs. Actual Errors
+
+**Issue:** Editor shows red squiggles but code works fine
+
+**Resolution:**
+1. Always verify with Biome: `pnpm biome check <file>`
+2. Editor diagnostics can lag or be incorrect (caching issues)
+3. Biome is the source of truth for this project
+4. If Biome passes, the code is valid
+
+#### Import Organization
+
+**Auto-fix imports with Biome:**
+```bash
+pnpm biome check --write src/
+```
+
+**Common issue:** Unused imports after refactoring
+- Let Biome handle it automatically
+- Don't manually manage imports unless necessary
+
+### Performance Optimization Patterns
+
+#### Timeout Values for Relay Operations
+
+**Recommended timeouts:**
+- Profile fetching: 3 seconds
+- Multiple profiles: 10 seconds
+- Timeline/feed: 5 seconds
+- Real-time subscriptions: No timeout (ongoing)
+
+**Why:**
+- Balance between responsiveness and reliability
+- Most relays respond within 1-2 seconds
+- Longer timeouts for batch operations
+
+#### Data Fetching Strategies
+
+**Single item (profile, event):**
+- Use `Promise.race` with multiple relays
+- Timeout: 3s
+- Return first successful response
+
+**Multiple items (feed, timeline):**
+- Use `Promise.all` to gather from multiple relays
+- Deduplicate by event ID
+- Timeout: 5-10s depending on expected count
+
+**Real-time (live updates):**
+- Keep subscription open
+- No timeout
+- Handle reconnection logic
