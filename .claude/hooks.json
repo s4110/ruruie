@@ -1,0 +1,28 @@
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "handler": {
+        "type": "command",
+        "command": ".claude/hooks/post-tool-use-biome-format.sh"
+      },
+      "description": "Auto-format TypeScript/JavaScript files with Biome after Edit/Write"
+    },
+    {
+      "event": "UserPromptSubmit",
+      "handler": {
+        "type": "prompt",
+        "prompt": ".claude/hooks/user-prompt-submit-japanese.md"
+      },
+      "description": "Remind Claude to respond in Japanese according to AGENT.md guidelines"
+    },
+    {
+      "event": "PreToolUse",
+      "handler": {
+        "type": "command",
+        "command": ".claude/hooks/pre-tool-use-enforce-pnpm.sh"
+      },
+      "description": "Block npm/yarn commands, enforce pnpm usage"
+    }
+  ]
+}
