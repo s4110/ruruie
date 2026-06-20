@@ -9,12 +9,19 @@ import {
 import LoginPage from "./features/auth/LoginPage";
 import { useProfile } from "./shared/nostr/hooks/useProfile";
 import { initializeRelays } from "./shared/nostr/relayManager";
+import { initializeVerificationService } from "./shared/nostr/verificationService";
 import ProfileCard from "./shared/ui/ProfileCard";
 
 function App() {
-	// Initialize relays and restore authentication on mount
+	// Initialize services and restore authentication on mount
 	onMount(() => {
+		// Initialize verification worker pool
+		initializeVerificationService();
+
+		// Initialize relay connections
 		initializeRelays();
+
+		// Restore auth from localStorage
 		restoreAuth();
 	});
 
