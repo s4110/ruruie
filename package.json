@@ -12,6 +12,8 @@
     "@solidjs/router": "^0.16.1",
     "@tanstack/solid-virtual": "^3.13.29",
     "nostr-tools": "^2.23.5",
+    "rx-nostr": "^3.7.4",
+    "rxjs": "^7.8.2",
     "solid-js": "^1.9.12"
   },
   "devDependencies": {
