@@ -10,11 +10,25 @@ window.addEventListener("error", (event) => {
 		event.preventDefault();
 		return;
 	}
+
+	// Ignore null/undefined errors (often from browser extensions)
+	if (event.error === null || event.error === undefined) {
+		event.preventDefault();
+		return;
+	}
+
+	// Log actual errors
 	console.error("Uncaught error:", event.error);
 });
 
 // Catch unhandled promise rejections
 window.addEventListener("unhandledrejection", (event) => {
+	// Ignore null/undefined rejections
+	if (event.reason === null || event.reason === undefined) {
+		event.preventDefault();
+		return;
+	}
+
 	console.error("Unhandled promise rejection:", event.reason);
 });
 

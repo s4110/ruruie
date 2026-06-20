@@ -13,6 +13,7 @@ import {
 import { firstValueFrom, type Observable } from "rxjs";
 import { first, map, shareReplay, timeout } from "rxjs/operators";
 import { createSignal } from "solid-js";
+import type { SignedEvent } from "./nip07";
 
 export type RelayStatus = "connecting" | "connected" | "disconnected" | "error";
 
@@ -248,4 +249,48 @@ export function subscribeToEvents$(filter: {
 	}, 0);
 
 	return observable.pipe(map((packet) => packet.event));
+}
+
+/**
+ * Publish an event to relays
+ * @param event - Signed event to publish
+ * @returns Promise that resolves to array of relay URLs that accepted the event
+ */
+export async function publishEvent(event: SignedEvent): Promise<string[]> {
+	const rxn = getRxNostr();
+
+	// Verify event signature before publishing
+	if (!verifyEvent(event)) {
+		throw new Error("Invalid event signature");
+	}
+
+	// Send event to all connected relays
+	const results = rxn.send(event);
+
+	// Collect successful relay URLs
+	const successfulRelays: string[] = [];
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			// Resolve with whatever we have after 5 seconds
+			resolve(successfulRelays);
+		}, 5000);
+
+		results.subscribe({
+			next: (packet) => {
+				// packet.from is the relay URL that accepted the event
+				if (packet.ok && packet.from) {
+					successfulRelays.push(packet.from);
+				}
+			},
+			error: (error) => {
+				clearTimeout(timeout);
+				reject(error);
+			},
+			complete: () => {
+				clearTimeout(timeout);
+				resolve(successfulRelays);
+			},
+		});
+	});
 }

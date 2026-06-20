@@ -7,6 +7,7 @@ import {
 } from "../../shared/nostr/relayManager";
 import Timeline, { type TimelineEvent } from "../../shared/ui/Timeline";
 import { logout } from "../auth/authStore";
+import PostComposer from "../post/PostComposer";
 
 const GlobalTimelinePage: Component = () => {
 	const [events, setEvents] = createSignal<TimelineEvent[]>([]);
@@ -218,6 +219,10 @@ const GlobalTimelinePage: Component = () => {
 						{events().length}件のイベント
 					</p>
 				</div>
+
+				<PostComposer onPostSuccess={() => {
+					console.log("Post published successfully!");
+				}} />
 
 				<Timeline
 					events={events}
