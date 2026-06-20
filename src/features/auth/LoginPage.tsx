@@ -1,3 +1,4 @@
+import { useNavigate } from "@solidjs/router";
 import { createSignal, onMount, Show } from "solid-js";
 import {
 	hasNostrExtension,
@@ -10,6 +11,7 @@ import { authSignals, login } from "./authStore";
  * Displays authentication UI for NIP-07 login
  */
 export default function LoginPage() {
+	const navigate = useNavigate();
 	const [isLoggingIn, setIsLoggingIn] = createSignal(false);
 	const [hasExtension, setHasExtension] = createSignal(false);
 	const [debugInfo, setDebugInfo] = createSignal<string>("");
@@ -51,6 +53,8 @@ export default function LoginPage() {
 		setIsLoggingIn(true);
 		try {
 			await login();
+			// Redirect to home page after successful login
+			navigate("/");
 		} catch (err) {
 			console.error("Login failed:", err);
 		} finally {
@@ -59,7 +63,7 @@ export default function LoginPage() {
 	};
 
 	return (
-		<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4">
+		<div class="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4">
 			<div class="max-w-md w-full">
 				<div class="text-center mb-8">
 					<h1 class="text-5xl font-bold text-purple-600 dark:text-purple-400 mb-2">
