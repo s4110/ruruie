@@ -4,7 +4,12 @@
  */
 
 import type { NostrEvent } from "nostr-tools/pure";
-import { createRxNostr, createRxOneshotReq } from "rx-nostr";
+import { verifyEvent } from "nostr-tools/pure";
+import {
+	createRxForwardReq,
+	createRxNostr,
+	createRxOneshotReq,
+} from "rx-nostr";
 import { firstValueFrom, type Observable } from "rxjs";
 import { first, map, shareReplay, timeout } from "rxjs/operators";
 import { createSignal } from "solid-js";
@@ -15,9 +20,12 @@ export type RelayStatus = "connecting" | "connected" | "disconnected" | "error";
  * Default relay list
  */
 export const DEFAULT_RELAYS = [
-	"wss://relay.damus.io",
-	"wss://nos.lol",
-	"wss://relay.nostr.band",
+	"wss://yabu.me/",
+	"wss://r.kojira.io/",
+	"wss://relay-jp.nostr.wirednet.jp/",
+	"wss://nostr.wine/",
+	"wss://nostr.land/",
+	"wss://nrelay-jp.c-stellar.net/",
 ] as const;
 
 /**
@@ -43,7 +51,10 @@ export function initializeRelays(
 		return;
 	}
 
-	rxNostr = createRxNostr();
+	// Create RxNostr with verifier (async wrapper for verifyEvent)
+	rxNostr = createRxNostr({
+		verifier: async (event) => verifyEvent(event),
+	});
 
 	// Set default relays
 	rxNostr.setDefaultRelays(urls as string[]);
@@ -174,7 +185,8 @@ export function fetchEvents$(filter: {
 
 	return rxn.use(req).pipe(
 		map((packet) => packet.event),
-		shareReplay(), // Cache all events
+		// shareReplay() can prevent complete() from propagating
+		// Remove it to allow proper completion
 	);
 }
 
@@ -215,21 +227,25 @@ export async function fetchEventsFromRelays(
 /**
  * Subscribe to real-time events using Observable
  * For continuous subscriptions (e.g., timeline, live updates)
- *
- * TODO: Implement when needed for timeline/feed features
+ * This uses createRxForwardReq to receive both stored and new real-time events
  */
-// export function subscribeToEvents$(filter: {
-// 	kinds?: number[];
-// 	authors?: string[];
-// 	ids?: string[];
-// 	since?: number;
-// 	until?: number;
-// }): Observable<NostrEvent> {
-// 	const rxn = getRxNostr();
-// 	const req = createRxForwardReq();
-// 	// Implementation pending - need to verify rx-nostr API
-// 	return rxn.use(req).pipe(
-// 		map((packet) => packet.event),
-// 		shareReplay(),
-// 	);
-// }
+export function subscribeToEvents$(filter: {
+	kinds?: number[];
+	authors?: string[];
+	ids?: string[];
+	since?: number;
+	until?: number;
+	limit?: number;
+}): Observable<NostrEvent> {
+	const rxn = getRxNostr();
+	const req = createRxForwardReq();
+
+	const observable = rxn.use(req);
+
+	// Emit filter AFTER creating observable
+	setTimeout(() => {
+		req.emit([filter]);
+	}, 0);
+
+	return observable.pipe(map((packet) => packet.event));
+}

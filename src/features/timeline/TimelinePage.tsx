@@ -18,6 +18,12 @@ const TimelinePage: Component = () => {
 					</h1>
 					<div class="flex items-center gap-4">
 						<A
+							href="/global"
+							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+						>
+							グローバル
+						</A>
+						<A
 							href="/profile"
 							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
 						>

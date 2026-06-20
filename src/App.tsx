@@ -4,6 +4,7 @@ import "./App.css";
 import { isAuthenticated, restoreAuth } from "./features/auth/authStore";
 import LoginPage from "./features/auth/LoginPage";
 import ProfilePage from "./features/profile/ProfilePage";
+import GlobalTimelinePage from "./features/timeline/GlobalTimelinePage";
 import TimelinePage from "./features/timeline/TimelinePage";
 import { initializeRelays } from "./shared/nostr/relayManager";
 import { initializeVerificationService } from "./shared/nostr/verificationService";
@@ -25,6 +26,7 @@ function App() {
 		<Router>
 			<Route path="/login" component={LoginPage} />
 			<Route path="/" component={ProtectedRoute(TimelinePage)} />
+			<Route path="/global" component={ProtectedRoute(GlobalTimelinePage)} />
 			<Route path="/profile" component={ProtectedRoute(ProfilePage)} />
 			<Route
 				path="*"

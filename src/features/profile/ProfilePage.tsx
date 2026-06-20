@@ -1,8 +1,8 @@
 import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { authSignals, logout } from "../auth/authStore";
 import { useProfile } from "../../shared/nostr/hooks/useProfile";
 import ProfileCard from "../../shared/ui/ProfileCard";
+import { authSignals, logout } from "../auth/authStore";
 
 const ProfilePage: Component = () => {
 	const profile = useProfile(authSignals.pubkey);
@@ -25,7 +25,13 @@ const ProfilePage: Component = () => {
 							href="/"
 							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
 						>
-							タイムライン
+							ホーム
+						</A>
+						<A
+							href="/global"
+							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+						>
+							グローバル
 						</A>
 						<button
 							type="button"
