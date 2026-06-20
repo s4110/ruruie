@@ -1,6 +1,7 @@
 import type { Accessor, Component } from "solid-js";
 import { createEffect, createSignal, Show } from "solid-js";
 import { VList, type VListHandle } from "virtua/solid";
+import ReplyComposer from "../../features/post/ReplyComposer";
 import {
 	fetchProfiles,
 	getAvatarUrl,
@@ -28,6 +29,7 @@ const Timeline: Component<TimelineProps> = (props) => {
 	let vlistHandle: VListHandle | undefined;
 	const [isAtTop, setIsAtTop] = createSignal(true);
 	const [, setProfilesLoaded] = createSignal(0); // Trigger re-render when profiles load
+	const [replyingToId, setReplyingToId] = createSignal<string | null>(null);
 
 	// Fetch profiles for visible events
 	createEffect(() => {
@@ -147,6 +149,34 @@ const Timeline: Component<TimelineProps> = (props) => {
 										<div class="text-gray-900 dark:text-white whitespace-pre-wrap wrap-break-word">
 											{event.content}
 										</div>
+
+										{/* Action buttons */}
+										<div class="flex items-center gap-4 mt-2">
+											<button
+												type="button"
+												onClick={() =>
+													setReplyingToId((prev) =>
+														prev === event.id ? null : event.id,
+													)
+												}
+												class="text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+											>
+												💬 リプライ
+											</button>
+										</div>
+
+										{/* Reply composer */}
+										<Show when={replyingToId() === event.id}>
+											<div class="mt-3">
+												<ReplyComposer
+													replyTo={event}
+													onReplySuccess={() => {
+														setReplyingToId(null);
+													}}
+													onCancel={() => setReplyingToId(null)}
+												/>
+											</div>
+										</Show>
 									</div>
 								</div>
 							</div>
