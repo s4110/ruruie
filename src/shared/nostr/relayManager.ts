@@ -180,6 +180,8 @@ export function fetchEvents$(filter: {
 	limit?: number;
 	since?: number;
 	until?: number;
+	"#p"?: string[];
+	"#e"?: string[];
 }): Observable<NostrEvent> {
 	const rxn = getRxNostr();
 	const req = createRxOneshotReq({ filters: [filter] });
@@ -202,6 +204,8 @@ export async function fetchEventsFromRelays(
 		limit?: number;
 		since?: number;
 		until?: number;
+		"#p"?: string[];
+		"#e"?: string[];
 	},
 	timeoutMs = 5000,
 ): Promise<NostrEvent[]> {
@@ -237,6 +241,8 @@ export function subscribeToEvents$(filter: {
 	since?: number;
 	until?: number;
 	limit?: number;
+	"#p"?: string[];
+	"#e"?: string[];
 }): Observable<NostrEvent> {
 	const rxn = getRxNostr();
 	const req = createRxForwardReq();

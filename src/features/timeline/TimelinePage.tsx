@@ -30,6 +30,12 @@ const TimelinePage: Component = () => {
 							グローバル
 						</A>
 						<A
+							href="/notifications"
+							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+						>
+							通知
+						</A>
+						<A
 							href="/profile"
 							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
 						>
