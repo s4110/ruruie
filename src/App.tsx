@@ -7,7 +7,6 @@ import ProfilePage from "./features/profile/ProfilePage";
 import GlobalTimelinePage from "./features/timeline/GlobalTimelinePage";
 import HomeTimelinePage from "./features/timeline/HomeTimelinePage";
 import NotificationTimelinePage from "./features/timeline/NotificationTimelinePage";
-import TimelinePage from "./features/timeline/TimelinePage";
 import { initializeRelays } from "./shared/nostr/relayManager";
 import { initializeVerificationService } from "./shared/nostr/verificationService";
 
@@ -42,8 +41,7 @@ function App() {
 		>
 			<Router>
 				<Route path="/login" component={LoginPage} />
-				<Route path="/" component={ProtectedRoute(TimelinePage)} />
-				<Route path="/home" component={ProtectedRoute(HomeTimelinePage)} />
+				<Route path="/" component={ProtectedRoute(HomeTimelinePage)} />
 				<Route path="/timeline" component={ProtectedRoute(GlobalTimelinePage)} />
 				<Route
 					path="/notifications"

@@ -216,7 +216,7 @@ const HomeTimelinePage: Component = () => {
 					</h1>
 					<div class="flex items-center gap-4">
 						<A
-							href="/home"
+							href="/"
 							class="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
 						>
 							ホーム
