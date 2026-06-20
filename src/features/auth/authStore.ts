@@ -1,5 +1,8 @@
 import { createSignal } from "solid-js";
-import { getPublicKey, hasNostrExtension } from "../../shared/nostr/nip07";
+import {
+	getPublicKey,
+	waitForNostrExtension,
+} from "../../shared/nostr/nip07";
 
 /**
  * Authentication state and actions
@@ -28,6 +31,14 @@ export function getCurrentPubkey(): string | null {
 }
 
 /**
+ * Get current user object
+ */
+export function getUser(): { pubkey: string } | null {
+	const pk = pubkey();
+	return pk ? { pubkey: pk } : null;
+}
+
+/**
  * Get current authentication state
  */
 export function getAuthState(): AuthState {
@@ -49,7 +60,10 @@ export async function login(): Promise<void> {
 	setAuthState("loading");
 
 	try {
-		if (!hasNostrExtension()) {
+		// Wait for extension to be available (5 second timeout for user action)
+		const extensionFound = await waitForNostrExtension(5000);
+
+		if (!extensionFound) {
 			throw new Error(
 				"Nostr拡張機能が見つかりません。nos2x、Alby、Flamingoなどのブラウザ拡張機能をインストールしてください。",
 			);
@@ -92,9 +106,11 @@ export async function restoreAuth(): Promise<void> {
 		return;
 	}
 
-	// Verify extension is still available and pubkey matches
-	if (!hasNostrExtension()) {
-		// Extension was removed, clear stored auth
+	// Wait for Nostr extension to load (with 3 second timeout)
+	const extensionFound = await waitForNostrExtension(3000);
+
+	if (!extensionFound) {
+		// Extension was removed or not available, clear stored auth
 		logout();
 		return;
 	}
@@ -110,7 +126,7 @@ export async function restoreAuth(): Promise<void> {
 			// Pubkey mismatch, user changed account
 			logout();
 		}
-	} catch {
+	} catch (err) {
 		// Extension error, clear auth
 		logout();
 	}

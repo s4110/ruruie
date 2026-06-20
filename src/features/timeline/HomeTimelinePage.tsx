@@ -1,20 +1,22 @@
 import { A } from "@solidjs/router";
 import type { Subscription } from "rxjs";
 import { type Component, createSignal, onCleanup, onMount } from "solid-js";
+import { fetchContactList } from "../../shared/nostr/contactList";
 import {
 	fetchEvents$,
 	subscribeToEvents$,
 } from "../../shared/nostr/relayManager";
 import Timeline, { type TimelineEvent } from "../../shared/ui/Timeline";
-import { logout } from "../auth/authStore";
+import { getUser, logout } from "../auth/authStore";
 import PostComposer from "../post/PostComposer";
 
-const GlobalTimelinePage: Component = () => {
+const HomeTimelinePage: Component = () => {
 	const [events, setEvents] = createSignal<TimelineEvent[]>([]);
 	const [loading, setLoading] = createSignal(true);
 	const [oldestTimestamp, setOldestTimestamp] = createSignal<number>(
 		Math.floor(Date.now() / 1000),
 	);
+	const [followingPubkeys, setFollowingPubkeys] = createSignal<string[]>([]);
 
 	const handleLogout = () => {
 		if (confirm("ログアウトしますか？")) {
@@ -25,8 +27,30 @@ const GlobalTimelinePage: Component = () => {
 	let loadSubscription: Subscription | null = null;
 	let realtimeSubscription: Subscription | null = null;
 
-	const loadEvents = (until?: number) => {
+	const loadEvents = async (until?: number) => {
 		setLoading(true);
+
+		// Get current user's pubkey
+		const user = getUser();
+		if (!user) {
+			console.error("User not logged in");
+			setLoading(false);
+			return;
+		}
+
+		// Fetch contact list if not already loaded
+		if (followingPubkeys().length === 0) {
+			const contacts = await fetchContactList(user.pubkey);
+			const pubkeys = contacts.map((c) => c.pubkey);
+
+			if (pubkeys.length === 0) {
+				console.log("No following list found");
+				setLoading(false);
+				return;
+			}
+
+			setFollowingPubkeys(pubkeys);
+		}
 
 		// Cancel previous load subscription if exists
 		if (loadSubscription) {
@@ -36,9 +60,10 @@ const GlobalTimelinePage: Component = () => {
 		try {
 			const timestamp = until || oldestTimestamp();
 
-			// Fetch kind 1 (text notes) from global timeline using createRxOneshotReq
+			// Fetch kind 1 (text notes) from followed users only
 			const observable = fetchEvents$({
 				kinds: [1],
+				authors: followingPubkeys(), // Only from followed users
 				limit: 50,
 				until: timestamp,
 			});
@@ -122,9 +147,10 @@ const GlobalTimelinePage: Component = () => {
 		// Start from 10 minutes ago to catch recent events
 		const since = now - 10 * 60;
 
-		// Subscribe to events from the last 10 minutes onwards
+		// Subscribe to events from followed users
 		const observable = subscribeToEvents$({
 			kinds: [1],
+			authors: followingPubkeys(), // Only from followed users
 			since: since,
 		});
 
@@ -191,13 +217,13 @@ const GlobalTimelinePage: Component = () => {
 					<div class="flex items-center gap-4">
 						<A
 							href="/home"
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+							class="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
 						>
 							ホーム
 						</A>
 						<A
 							href="/timeline"
-							class="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
 						>
 							グローバル
 						</A>
@@ -219,16 +245,19 @@ const GlobalTimelinePage: Component = () => {
 
 				<div class="mb-4">
 					<h2 class="text-xl font-bold text-gray-900 dark:text-white">
-						グローバルタイムライン
+						ホームタイムライン
 					</h2>
 					<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-						{events().length}件のイベント
+						{events().length}件のイベント / {followingPubkeys().length}
+						人をフォロー中
 					</p>
 				</div>
 
-				<PostComposer onPostSuccess={() => {
-					console.log("Post published successfully!");
-				}} />
+				<PostComposer
+					onPostSuccess={() => {
+						console.log("Post published successfully!");
+					}}
+				/>
 
 				<Timeline
 					events={events}
@@ -240,4 +269,4 @@ const GlobalTimelinePage: Component = () => {
 	);
 };
 
-export default GlobalTimelinePage;
+export default HomeTimelinePage;

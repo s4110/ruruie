@@ -1,6 +1,12 @@
 import type { Accessor, Component } from "solid-js";
-import { createSignal, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import { VList, type VListHandle } from "virtua/solid";
+import {
+	fetchProfiles,
+	getAvatarUrl,
+	getCachedProfile,
+	getDisplayName,
+} from "../nostr/profileCache";
 
 export interface TimelineEvent {
 	id: string;
@@ -21,6 +27,22 @@ interface TimelineProps {
 const Timeline: Component<TimelineProps> = (props) => {
 	let vlistHandle: VListHandle | undefined;
 	const [isAtTop, setIsAtTop] = createSignal(true);
+	const [, setProfilesLoaded] = createSignal(0); // Trigger re-render when profiles load
+
+	// Fetch profiles for visible events
+	createEffect(() => {
+		const events = props.events();
+		if (events.length === 0) return;
+
+		// Get unique pubkeys
+		const pubkeys = [...new Set(events.map((e) => e.pubkey))];
+
+		// Fetch profiles in background
+		fetchProfiles(pubkeys).then(() => {
+			// Trigger re-render
+			setProfilesLoaded((prev) => prev + 1);
+		});
+	});
 
 	const handleScroll = (offset: number) => {
 		if (!vlistHandle) return;
@@ -61,10 +83,6 @@ const Timeline: Component<TimelineProps> = (props) => {
 		});
 	};
 
-	const shortenPubkey = (pubkey: string) => {
-		return `${pubkey.slice(0, 8)}...${pubkey.slice(-8)}`;
-	};
-
 	return (
 		<div>
 			<Show
@@ -84,23 +102,56 @@ const Timeline: Component<TimelineProps> = (props) => {
 					onScroll={handleScroll}
 					shift={!isAtTop()}
 				>
-					{(event: TimelineEvent) => (
-						<div class="border-b border-gray-200 dark:border-gray-700 py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-							<div class="flex items-start gap-3">
-								<div class="text-xs text-gray-500 dark:text-gray-400 shrink-0 w-16">
-									{formatTime(event.created_at)}
-								</div>
-								<div class="flex-1 min-w-0">
-									<div class="text-sm font-mono text-gray-600 dark:text-gray-400 mb-1">
-										{shortenPubkey(event.pubkey)}
+					{(event: TimelineEvent) => {
+						const profile = getCachedProfile(event.pubkey);
+						const displayName = getDisplayName(profile, event.pubkey);
+						const avatarUrl = getAvatarUrl(profile);
+
+						return (
+							<div class="border-b border-gray-200 dark:border-gray-700 py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+								<div class="flex items-start gap-3">
+									{/* Avatar */}
+									<div class="shrink-0">
+										<Show
+											when={avatarUrl}
+											fallback={
+												<div class="w-10 h-10 rounded-full bg-linear-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
+													{displayName.slice(0, 2).toUpperCase()}
+												</div>
+											}
+										>
+											{avatarUrl && (
+												<img
+													src={avatarUrl}
+													alt={displayName}
+													class="w-10 h-10 rounded-full object-cover"
+													onError={(e) => {
+														// Fallback to gradient on image error
+														e.currentTarget.style.display = "none";
+													}}
+												/>
+											)}
+										</Show>
 									</div>
-									<div class="text-gray-900 dark:text-white whitespace-pre-wrap wrap-break-word">
-										{event.content}
+
+									{/* Content */}
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-2 mb-1">
+											<span class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+												{displayName}
+											</span>
+											<span class="text-xs text-gray-500 dark:text-gray-500">
+												{formatTime(event.created_at)}
+											</span>
+										</div>
+										<div class="text-gray-900 dark:text-white whitespace-pre-wrap wrap-break-word">
+											{event.content}
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-					)}
+						);
+					}}
 				</VList>
 			</Show>
 
