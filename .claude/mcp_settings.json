@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "deepwiki": {
+      "command": "npx",
+      "args": ["-y", "@deepwiki/mcp-server"]
+    },
+    "codegraph": {
+      "command": "npx",
+      "args": ["-y", "@getmantis/codegraph-mcp"]
+    }
+  }
+}
