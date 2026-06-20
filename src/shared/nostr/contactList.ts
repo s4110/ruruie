@@ -5,7 +5,6 @@
 
 import type { NostrEvent } from "nostr-tools/pure";
 import { firstValueFrom } from "rxjs";
-import { timeout } from "rxjs/operators";
 import { createSignal } from "solid-js";
 import { fetchEvent$ } from "./relayManager";
 
@@ -53,12 +52,13 @@ export async function fetchContactList(pubkey: string): Promise<Contact[]> {
 	setContactListLoading(true);
 
 	try {
+		// fetchEvent$は既にタイムアウト処理を含むので、追加のtimeoutは不要
 		const event = await firstValueFrom(
 			fetchEvent$({
 				kinds: [3],
 				authors: [pubkey],
 				limit: 1,
-			}).pipe(timeout(5000)),
+			}),
 			{ defaultValue: null },
 		);
 
@@ -79,6 +79,10 @@ export async function fetchContactList(pubkey: string): Promise<Contact[]> {
 		return contacts;
 	} catch (error) {
 		console.error("Failed to fetch contact list:", error);
+		// エラー詳細をログ出力
+		if (error instanceof Error) {
+			console.error("Error details:", error.message);
+		}
 		setContactList([]);
 		return [];
 	} finally {

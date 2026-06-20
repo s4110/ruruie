@@ -148,7 +148,25 @@ export function getNostrExtension(): NostrExtension {
  */
 export async function getPublicKey(): Promise<string> {
 	const nostr = getNostrExtension();
-	return await nostr.getPublicKey();
+	try {
+		return await nostr.getPublicKey();
+	} catch (error) {
+		// Handle extension communication errors
+		if (error instanceof Error) {
+			// Message port closed error
+			if (error.message.includes("message port closed")) {
+				throw new Error(
+					"拡張機能との通信が切断されました。ページを再読み込みしてください。",
+				);
+			}
+			// User rejected access
+			if (error.message.includes("User rejected") || error.message.includes("cancelled")) {
+				throw new Error("アクセスがキャンセルされました");
+			}
+		}
+		// Re-throw original error if we don't recognize it
+		throw error;
+	}
 }
 
 /**
@@ -156,7 +174,25 @@ export async function getPublicKey(): Promise<string> {
  */
 export async function signEvent(event: UnsignedEvent): Promise<SignedEvent> {
 	const nostr = getNostrExtension();
-	return await nostr.signEvent(event);
+	try {
+		return await nostr.signEvent(event);
+	} catch (error) {
+		// Handle extension communication errors
+		if (error instanceof Error) {
+			// Message port closed error
+			if (error.message.includes("message port closed")) {
+				throw new Error(
+					"拡張機能との通信が切断されました。ページを再読み込みしてください。",
+				);
+			}
+			// User rejected signing
+			if (error.message.includes("User rejected") || error.message.includes("cancelled")) {
+				throw new Error("署名がキャンセルされました");
+			}
+		}
+		// Re-throw original error if we don't recognize it
+		throw error;
+	}
 }
 
 /**
@@ -192,7 +228,17 @@ export async function encryptMessage(
 	if (!nostr.nip04) {
 		throw new Error("NIP-04 encryption not supported by extension");
 	}
-	return await nostr.nip04.encrypt(recipientPubkey, plaintext);
+	try {
+		return await nostr.nip04.encrypt(recipientPubkey, plaintext);
+	} catch (error) {
+		// Handle extension communication errors
+		if (error instanceof Error && error.message.includes("message port closed")) {
+			throw new Error(
+				"拡張機能との通信が切断されました。ページを再読み込みしてください。",
+			);
+		}
+		throw error;
+	}
 }
 
 /**
@@ -206,5 +252,15 @@ export async function decryptMessage(
 	if (!nostr.nip04) {
 		throw new Error("NIP-04 decryption not supported by extension");
 	}
-	return await nostr.nip04.decrypt(senderPubkey, ciphertext);
+	try {
+		return await nostr.nip04.decrypt(senderPubkey, ciphertext);
+	} catch (error) {
+		// Handle extension communication errors
+		if (error instanceof Error && error.message.includes("message port closed")) {
+			throw new Error(
+				"拡張機能との通信が切断されました。ページを再読み込みしてください。",
+			);
+		}
+		throw error;
+	}
 }

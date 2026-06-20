@@ -1,7 +1,13 @@
 import type { Accessor, Component } from "solid-js";
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { VList, type VListHandle } from "virtua/solid";
 import ReplyComposer from "../../features/post/ReplyComposer";
+import {
+	fetchReactionCount,
+	hasUserReacted,
+	sendReaction,
+	subscribeToReactions,
+} from "../../features/reaction/reactionService";
 import {
 	fetchProfiles,
 	getAvatarUrl,
@@ -31,6 +37,11 @@ const Timeline: Component<TimelineProps> = (props) => {
 	const [, setProfilesLoaded] = createSignal(0); // Trigger re-render when profiles load
 	const [replyingToId, setReplyingToId] = createSignal<string | null>(null);
 
+	// Reaction state: Map<eventId, { count: number, userReacted: boolean, loading: boolean }>
+	const [reactionStates, setReactionStates] = createSignal<
+		Map<string, { count: number; userReacted: boolean; loading: boolean }>
+	>(new Map());
+
 	// Fetch profiles for visible events
 	createEffect(() => {
 		const events = props.events();
@@ -45,6 +56,105 @@ const Timeline: Component<TimelineProps> = (props) => {
 			setProfilesLoaded((prev) => prev + 1);
 		});
 	});
+
+	// Track subscriptions for cleanup
+	const subscriptions = new Map<string, () => void>();
+
+	// Fetch reaction counts for events
+	createEffect(() => {
+		const events = props.events();
+		if (events.length === 0) return;
+
+		// Fetch reactions for each event
+		events.forEach((event) => {
+			// Skip if already loading/loaded
+			if (reactionStates().has(event.id)) return;
+
+			// Set loading state
+			setReactionStates((prev) => {
+				const newMap = new Map(prev);
+				newMap.set(event.id, { count: 0, userReacted: false, loading: true });
+				return newMap;
+			});
+
+			// Fetch count and user reaction status in parallel
+			void Promise.all([
+				fetchReactionCount(event.id),
+				hasUserReacted(event.id),
+			]).then(([count, userReacted]) => {
+				// Update state
+				setReactionStates((prev) => {
+					const newMap = new Map(prev);
+					newMap.set(event.id, { count, userReacted, loading: false });
+					return newMap;
+				});
+
+				// Subscribe to real-time updates
+				const unsubscribe = subscribeToReactions(event.id, (newCount) => {
+					setReactionStates((prev) => {
+						const newMap = new Map(prev);
+						const current = newMap.get(event.id);
+						if (current) {
+							newMap.set(event.id, { ...current, count: newCount });
+						}
+						return newMap;
+					});
+				});
+
+				// Store unsubscribe function
+				subscriptions.set(event.id, unsubscribe);
+			});
+		});
+	});
+
+	// Cleanup subscriptions on component unmount
+	onCleanup(() => {
+		subscriptions.forEach((unsubscribe) => unsubscribe());
+		subscriptions.clear();
+	});
+
+	// Handle reaction toggle
+	const handleReaction = async (event: TimelineEvent) => {
+		const state = reactionStates().get(event.id);
+		if (!state || state.loading) return;
+
+		// Optimistic update
+		setReactionStates((prev) => {
+			const newMap = new Map(prev);
+			newMap.set(event.id, {
+				count: state.userReacted ? state.count - 1 : state.count + 1,
+				userReacted: !state.userReacted,
+				loading: true,
+			});
+			return newMap;
+		});
+
+		try {
+			if (!state.userReacted) {
+				// Send reaction
+				await sendReaction(event, "+");
+			}
+			// Note: 既存のリアクションを削除する機能は別途実装が必要
+		} catch (err) {
+			console.error("Failed to send reaction:", err);
+			// Revert optimistic update on error
+			setReactionStates((prev) => {
+				const newMap = new Map(prev);
+				newMap.set(event.id, state);
+				return newMap;
+			});
+		} finally {
+			// Remove loading state
+			setReactionStates((prev) => {
+				const newMap = new Map(prev);
+				const current = newMap.get(event.id);
+				if (current) {
+					newMap.set(event.id, { ...current, loading: false });
+				}
+				return newMap;
+			});
+		}
+	};
 
 	const handleScroll = (offset: number) => {
 		if (!vlistHandle) return;
@@ -162,6 +272,29 @@ const Timeline: Component<TimelineProps> = (props) => {
 												class="text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
 											>
 												💬 リプライ
+											</button>
+
+											{/* Reaction button */}
+											<button
+												type="button"
+												onClick={() => handleReaction(event)}
+												disabled={reactionStates().get(event.id)?.loading}
+												class="flex items-center gap-1 text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+												classList={{
+													"text-red-500 dark:text-red-400":
+														reactionStates().get(event.id)?.userReacted,
+													"text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400":
+														!reactionStates().get(event.id)?.userReacted,
+												}}
+											>
+												<span>
+													{reactionStates().get(event.id)?.userReacted
+														? "❤️"
+														: "🤍"}
+												</span>
+												<Show when={reactionStates().get(event.id)?.count ?? 0}>
+													<span>{reactionStates().get(event.id)?.count}</span>
+												</Show>
 											</button>
 										</div>
 
