@@ -109,7 +109,9 @@ const Timeline: Component<TimelineProps> = (props) => {
 
 	// Cleanup subscriptions on component unmount
 	onCleanup(() => {
-		subscriptions.forEach((unsubscribe) => unsubscribe());
+		subscriptions.forEach((unsubscribe) => {
+			unsubscribe();
+		});
 		subscriptions.clear();
 	});
 
