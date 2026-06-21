@@ -1,10 +1,10 @@
 import { useNavigate } from "@solidjs/router";
 import { createSignal, onMount, Show } from "solid-js";
+import { authSignals, login } from "../features/auth/authStore";
 import {
 	hasNostrExtension,
 	waitForNostrExtension,
-} from "../../services/nostr/nips/nip07";
-import { authSignals, login } from "./authStore";
+} from "../services/nostr/nips/nip07";
 
 /**
  * Login page component

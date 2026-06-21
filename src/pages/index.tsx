@@ -1,25 +1,50 @@
 import type { Subscription } from "rxjs";
 import { type Component, createSignal, onCleanup, onMount } from "solid-js";
+import { getUser } from "../features/auth/authStore";
+import PostComposer from "../features/post/PostComposer";
 import {
 	fetchEvents$,
 	subscribeToEvents$,
-} from "../../infrastructure/nostr/relayManager";
-import AppLayout from "../../shared/ui/AppLayout";
-import Timeline, { type TimelineEvent } from "../../shared/ui/Timeline";
-import PostComposer from "../post/PostComposer";
+} from "../infrastructure/nostr/relayManager";
+import { fetchContactList } from "../services/nostr/nips/nip02";
+import AppLayout from "../shared/ui/AppLayout";
+import Timeline, { type TimelineEvent } from "../shared/ui/Timeline";
 
-const GlobalTimelinePage: Component = () => {
+const HomeTimelinePage: Component = () => {
 	const [events, setEvents] = createSignal<TimelineEvent[]>([]);
 	const [loading, setLoading] = createSignal(true);
 	const [oldestTimestamp, setOldestTimestamp] = createSignal<number>(
 		Math.floor(Date.now() / 1000),
 	);
+	const [followingPubkeys, setFollowingPubkeys] = createSignal<string[]>([]);
 
 	let loadSubscription: Subscription | null = null;
 	let realtimeSubscription: Subscription | null = null;
 
-	const loadEvents = (until?: number) => {
+	const loadEvents = async (until?: number) => {
 		setLoading(true);
+
+		// Get current user's pubkey
+		const user = getUser();
+		if (!user) {
+			console.error("User not logged in");
+			setLoading(false);
+			return;
+		}
+
+		// Fetch contact list if not already loaded
+		if (followingPubkeys().length === 0) {
+			const contacts = await fetchContactList(user.pubkey);
+			const pubkeys = contacts.map((c) => c.pubkey);
+
+			if (pubkeys.length === 0) {
+				console.log("No following list found");
+				setLoading(false);
+				return;
+			}
+
+			setFollowingPubkeys(pubkeys);
+		}
 
 		// Cancel previous load subscription if exists
 		if (loadSubscription) {
@@ -29,9 +54,10 @@ const GlobalTimelinePage: Component = () => {
 		try {
 			const timestamp = until || oldestTimestamp();
 
-			// Fetch kind 1 (text notes) from global timeline using createRxOneshotReq
+			// Fetch kind 1 (text notes) from followed users only
 			const observable = fetchEvents$({
 				kinds: [1],
+				authors: followingPubkeys(), // Only from followed users
 				limit: 50,
 				until: timestamp,
 			});
@@ -115,9 +141,10 @@ const GlobalTimelinePage: Component = () => {
 		// Start from 10 minutes ago to catch recent events
 		const since = now - 10 * 60;
 
-		// Subscribe to events from the last 10 minutes onwards
+		// Subscribe to events from followed users
 		const observable = subscribeToEvents$({
 			kinds: [1],
+			authors: followingPubkeys(), // Only from followed users
 			since: since,
 		});
 
@@ -178,24 +205,23 @@ const GlobalTimelinePage: Component = () => {
 		<AppLayout>
 			<div class="mb-4">
 				<h2 class="text-xl font-bold text-gray-900 dark:text-white">
-					グローバルタイムライン
+					ホームタイムライン
 				</h2>
 				<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-					{events().length}件のイベント
+					{events().length}件のイベント / {followingPubkeys().length}
+					人をフォロー中
 				</p>
 			</div>
 
-			<PostComposer onPostSuccess={() => {
-				console.log("Post published successfully!");
-			}} />
-
-			<Timeline
-				events={events}
-				loading={loading}
-				onLoadMore={handleLoadMore}
+			<PostComposer
+				onPostSuccess={() => {
+					console.log("Post published successfully!");
+				}}
 			/>
+
+			<Timeline events={events} loading={loading} onLoadMore={handleLoadMore} />
 		</AppLayout>
 	);
 };
 
-export default GlobalTimelinePage;
+export default HomeTimelinePage;

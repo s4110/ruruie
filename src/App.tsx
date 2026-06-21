@@ -1,12 +1,8 @@
-import { Navigate, Route, Router } from "@solidjs/router";
+import { Navigate, Router } from "@solidjs/router";
 import { type Component, createSignal, onMount, Show } from "solid-js";
 import "./App.css";
+import routes from "~solid-pages";
 import { isAuthenticated, restoreAuth } from "./features/auth/authStore";
-import LoginPage from "./features/auth/LoginPage";
-import ProfilePage from "./features/profile/ProfilePage";
-import GlobalTimelinePage from "./features/timeline/GlobalTimelinePage";
-import HomeTimelinePage from "./features/timeline/HomeTimelinePage";
-import NotificationTimelinePage from "./features/timeline/NotificationTimelinePage";
 import { initializeRelays } from "./infrastructure/nostr/relayManager";
 import { initializeVerificationService } from "./infrastructure/nostr/verificationService";
 
@@ -40,18 +36,16 @@ function App() {
 			}
 		>
 			<Router>
-				<Route path="/login" component={LoginPage} />
-				<Route path="/" component={ProtectedRoute(HomeTimelinePage)} />
-				<Route path="/timeline" component={ProtectedRoute(GlobalTimelinePage)} />
-				<Route
-					path="/notifications"
-					component={ProtectedRoute(NotificationTimelinePage)}
-				/>
-				<Route path="/profile" component={ProtectedRoute(ProfilePage)} />
-				<Route
-					path="*"
-					component={() => <Navigate href={isAuthenticated() ? "/" : "/login"} />}
-				/>
+				{routes.map((route) => {
+					// Apply ProtectedRoute wrapper to all routes except /login
+					if (route.path === "/login") {
+						return route;
+					}
+					return {
+						...route,
+						component: ProtectedRoute(route.component as Component),
+					};
+				})}
 			</Router>
 		</Show>
 	);

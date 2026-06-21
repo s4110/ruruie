@@ -1,8 +1,8 @@
 import type { Component } from "solid-js";
-import { useProfile } from "../../services/nostr/hooks/useProfile";
-import AppLayout from "../../shared/ui/AppLayout";
-import ProfileCard from "../../shared/ui/ProfileCard";
-import { authSignals } from "../auth/authStore";
+import { authSignals } from "../features/auth/authStore";
+import { useProfile } from "../services/nostr/hooks/useProfile";
+import AppLayout from "../shared/ui/AppLayout";
+import ProfileCard from "../shared/ui/ProfileCard";
 
 const ProfilePage: Component = () => {
 	const profile = useProfile(authSignals.pubkey);

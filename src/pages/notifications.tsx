@@ -7,14 +7,14 @@ import {
 	Show,
 } from "solid-js";
 import { VList } from "virtua/solid";
-import { fetchProfile } from "../../infrastructure/nostr/profileCache";
+import { getUser } from "../features/auth/authStore";
+import { fetchProfile } from "../infrastructure/nostr/profileCache";
 import {
 	fetchEvents$,
 	subscribeToEvents$,
-} from "../../infrastructure/nostr/relayManager";
-import AppLayout from "../../shared/ui/AppLayout";
-import type { TimelineEvent } from "../../shared/ui/Timeline";
-import { getUser } from "../auth/authStore";
+} from "../infrastructure/nostr/relayManager";
+import AppLayout from "../shared/ui/AppLayout";
+import type { TimelineEvent } from "../shared/ui/Timeline";
 
 interface NotificationEvent extends TimelineEvent {
 	notificationType: "reply" | "reaction" | "repost" | "mention";
@@ -103,9 +103,7 @@ const NotificationTimelinePage: Component = () => {
 							} else if (notificationEvent.kind === 1) {
 								// Check if it's a reply or just a mention
 								const isReply = notificationEvent.tags.some(
-									(tag) =>
-										tag[0] === "e" &&
-										tag[3] === "reply",
+									(tag) => tag[0] === "e" && tag[3] === "reply",
 								);
 								notificationEvent.notificationType = isReply
 									? "reply"
@@ -194,14 +192,15 @@ const NotificationTimelinePage: Component = () => {
 						notificationEvent.notificationType = "repost";
 					} else if (notificationEvent.kind === 1) {
 						const isReply = notificationEvent.tags.some(
-							(tag) =>
-								tag[0] === "e" &&
-								tag[3] === "reply",
+							(tag) => tag[0] === "e" && tag[3] === "reply",
 						);
 						notificationEvent.notificationType = isReply ? "reply" : "mention";
 					}
 
-					console.log("🔔 New notification:", notificationEvent.notificationType);
+					console.log(
+						"🔔 New notification:",
+						notificationEvent.notificationType,
+					);
 
 					setNotifications((prev) => {
 						const exists = prev.some((e) => e.id === notificationEvent.id);
@@ -219,7 +218,6 @@ const NotificationTimelinePage: Component = () => {
 			},
 		});
 	};
-
 
 	onMount(() => {
 		loadNotifications();
@@ -304,7 +302,10 @@ const NotificationTimelinePage: Component = () => {
 				}
 			>
 				<div class="bg-white dark:bg-gray-800 rounded-lg">
-					<VList style={{ height: "calc(100vh - 250px)" }} data={notifications()}>
+					<VList
+						style={{ height: "calc(100vh - 250px)" }}
+						data={notifications()}
+					>
 						{(notification: NotificationEvent) => (
 							<div class="border-b border-gray-200 dark:border-gray-700 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
 								<div class="flex items-start gap-3">
@@ -329,7 +330,9 @@ const NotificationTimelinePage: Component = () => {
 											</div>
 										</Show>
 										<Show when={notification.kind === 7}>
-											<div class="text-base">{notification.content || "👍"}</div>
+											<div class="text-base">
+												{notification.content || "👍"}
+											</div>
 										</Show>
 										<Show when={notification.kind === 6}>
 											<div class="text-sm text-gray-600 dark:text-gray-400">
