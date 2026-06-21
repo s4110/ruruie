@@ -9,6 +9,7 @@ export default defineConfig({
 		solid(),
 		pages({
 			dirs: "src/pages",
+			resolver: "solid",
 		}),
 	],
 });

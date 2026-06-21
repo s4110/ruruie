@@ -22,6 +22,21 @@ function App() {
 		setAuthInitialized(true);
 	});
 
+	// Apply ProtectedRoute wrapper to all routes except /login
+	const protectedRoutes = routes.map((route) => {
+		// Fix path to include leading slash if missing
+		const fixedPath = route.path?.startsWith("/") ? route.path : `/${route.path}`;
+		const fixedRoute = { ...route, path: fixedPath };
+
+		if (fixedPath === "/login") {
+			return fixedRoute;
+		}
+		return {
+			...fixedRoute,
+			component: ProtectedRoute(route.component as Component),
+		};
+	});
+
 	// Show loading screen while auth is being restored
 	return (
 		<Show
@@ -35,18 +50,7 @@ function App() {
 				</div>
 			}
 		>
-			<Router>
-				{routes.map((route) => {
-					// Apply ProtectedRoute wrapper to all routes except /login
-					if (route.path === "/login") {
-						return route;
-					}
-					return {
-						...route,
-						component: ProtectedRoute(route.component as Component),
-					};
-				})}
-			</Router>
+			<Router>{protectedRoutes}</Router>
 		</Show>
 	);
 }
