@@ -1,12 +1,11 @@
-import { A } from "@solidjs/router";
 import type { Subscription } from "rxjs";
 import { type Component, createSignal, onCleanup, onMount } from "solid-js";
 import {
 	fetchEvents$,
 	subscribeToEvents$,
 } from "../../infrastructure/nostr/relayManager";
+import AppLayout from "../../shared/ui/AppLayout";
 import Timeline, { type TimelineEvent } from "../../shared/ui/Timeline";
-import { logout } from "../auth/authStore";
 import PostComposer from "../post/PostComposer";
 
 const GlobalTimelinePage: Component = () => {
@@ -15,12 +14,6 @@ const GlobalTimelinePage: Component = () => {
 	const [oldestTimestamp, setOldestTimestamp] = createSignal<number>(
 		Math.floor(Date.now() / 1000),
 	);
-
-	const handleLogout = () => {
-		if (confirm("ログアウトしますか？")) {
-			logout();
-		}
-	};
 
 	let loadSubscription: Subscription | null = null;
 	let realtimeSubscription: Subscription | null = null;
@@ -182,67 +175,26 @@ const GlobalTimelinePage: Component = () => {
 	});
 
 	return (
-		<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-			<div class="max-w-2xl mx-auto p-4">
-				<div class="flex items-center justify-between mb-6">
-					<h1 class="text-2xl font-bold text-purple-600 dark:text-purple-400">
-						ruruie
-					</h1>
-					<div class="flex items-center gap-4">
-						<A
-							href="/"
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-						>
-							ホーム
-						</A>
-						<A
-							href="/timeline"
-							class="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
-						>
-							グローバル
-						</A>
-						<A
-							href="/notifications"
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-						>
-							通知
-						</A>
-						<A
-							href="/profile"
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-						>
-							プロフィール
-						</A>
-						<button
-							type="button"
-							onClick={handleLogout}
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-						>
-							ログアウト
-						</button>
-					</div>
-				</div>
-
-				<div class="mb-4">
-					<h2 class="text-xl font-bold text-gray-900 dark:text-white">
-						グローバルタイムライン
-					</h2>
-					<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-						{events().length}件のイベント
-					</p>
-				</div>
-
-				<PostComposer onPostSuccess={() => {
-					console.log("Post published successfully!");
-				}} />
-
-				<Timeline
-					events={events}
-					loading={loading}
-					onLoadMore={handleLoadMore}
-				/>
+		<AppLayout>
+			<div class="mb-4">
+				<h2 class="text-xl font-bold text-gray-900 dark:text-white">
+					グローバルタイムライン
+				</h2>
+				<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+					{events().length}件のイベント
+				</p>
 			</div>
-		</div>
+
+			<PostComposer onPostSuccess={() => {
+				console.log("Post published successfully!");
+			}} />
+
+			<Timeline
+				events={events}
+				loading={loading}
+				onLoadMore={handleLoadMore}
+			/>
+		</AppLayout>
 	);
 };
 

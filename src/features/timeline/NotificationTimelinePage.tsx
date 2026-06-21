@@ -1,4 +1,3 @@
-import { A } from "@solidjs/router";
 import type { Subscription } from "rxjs";
 import {
 	type Component,
@@ -13,8 +12,9 @@ import {
 	fetchEvents$,
 	subscribeToEvents$,
 } from "../../infrastructure/nostr/relayManager";
+import AppLayout from "../../shared/ui/AppLayout";
 import type { TimelineEvent } from "../../shared/ui/Timeline";
-import { getUser, logout } from "../auth/authStore";
+import { getUser } from "../auth/authStore";
 
 interface NotificationEvent extends TimelineEvent {
 	notificationType: "reply" | "reaction" | "repost" | "mention";
@@ -33,12 +33,6 @@ const NotificationTimelinePage: Component = () => {
 	let loadSubscription: Subscription | null = null;
 	let realtimeSubscription: Subscription | null = null;
 	const profileCache = new Map<string, string>();
-
-	const handleLogout = () => {
-		if (confirm("ログアウトしますか？")) {
-			logout();
-		}
-	};
 
 	// Fetch profile name for a notification
 	const getAuthorName = (notification: NotificationEvent): string => {
@@ -283,120 +277,79 @@ const NotificationTimelinePage: Component = () => {
 	};
 
 	return (
-		<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-			<div class="max-w-2xl mx-auto p-4">
-				<div class="flex items-center justify-between mb-6">
-					<h1 class="text-2xl font-bold text-purple-600 dark:text-purple-400">
-						ruruie
-					</h1>
-					<div class="flex items-center gap-4">
-						<A
-							href="/"
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+		<AppLayout>
+			<div class="mb-4">
+				<h2 class="text-xl font-bold text-gray-900 dark:text-white">通知</h2>
+				<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+					{notifications().length}件の通知
+				</p>
+			</div>
+
+			<Show
+				when={notifications().length > 0}
+				fallback={
+					<div class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+						<Show
+							when={!loading()}
+							fallback={
+								<>
+									<div class="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
+									<p class="text-gray-600 dark:text-gray-400">読み込み中...</p>
+								</>
+							}
 						>
-							ホーム
-						</A>
-						<A
-							href="/timeline"
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-						>
-							グローバル
-						</A>
-						<A
-							href="/notifications"
-							class="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
-						>
-							通知
-						</A>
-						<A
-							href="/profile"
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-						>
-							プロフィール
-						</A>
-						<button
-							type="button"
-							onClick={handleLogout}
-							class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-						>
-							ログアウト
-						</button>
+							<p class="text-gray-600 dark:text-gray-400">通知はありません</p>
+						</Show>
 					</div>
-				</div>
-
-				<div class="mb-4">
-					<h2 class="text-xl font-bold text-gray-900 dark:text-white">通知</h2>
-					<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-						{notifications().length}件の通知
-					</p>
-				</div>
-
-				<Show
-					when={notifications().length > 0}
-					fallback={
-						<div class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
-							<Show
-								when={!loading()}
-								fallback={
-									<>
-										<div class="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
-										<p class="text-gray-600 dark:text-gray-400">読み込み中...</p>
-									</>
-								}
-							>
-								<p class="text-gray-600 dark:text-gray-400">通知はありません</p>
-							</Show>
-						</div>
-					}
-				>
-					<div class="bg-white dark:bg-gray-800 rounded-lg">
-						<VList style={{ height: "calc(100vh - 250px)" }} data={notifications()}>
-							{(notification: NotificationEvent) => (
-								<div class="border-b border-gray-200 dark:border-gray-700 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-									<div class="flex items-start gap-3">
-										<div class="text-xl flex-shrink-0">
-											{getNotificationIcon(notification.notificationType)}
+				}
+			>
+				<div class="bg-white dark:bg-gray-800 rounded-lg">
+					<VList style={{ height: "calc(100vh - 250px)" }} data={notifications()}>
+						{(notification: NotificationEvent) => (
+							<div class="border-b border-gray-200 dark:border-gray-700 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+								<div class="flex items-start gap-3">
+									<div class="text-xl flex-shrink-0">
+										{getNotificationIcon(notification.notificationType)}
+									</div>
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-2 mb-1">
+											<span class="text-sm font-medium text-gray-900 dark:text-white truncate">
+												{getAuthorName(notification)}
+											</span>
+											<span class="text-xs text-purple-600 dark:text-purple-400">
+												{getNotificationLabel(notification.notificationType)}
+											</span>
+											<span class="text-xs text-gray-500 dark:text-gray-400 ml-auto flex-shrink-0">
+												{formatRelativeTime(notification.created_at)}
+											</span>
 										</div>
-										<div class="flex-1 min-w-0">
-											<div class="flex items-center gap-2 mb-1">
-												<span class="text-sm font-medium text-gray-900 dark:text-white truncate">
-													{getAuthorName(notification)}
-												</span>
-												<span class="text-xs text-purple-600 dark:text-purple-400">
-													{getNotificationLabel(notification.notificationType)}
-												</span>
-												<span class="text-xs text-gray-500 dark:text-gray-400 ml-auto flex-shrink-0">
-													{formatRelativeTime(notification.created_at)}
-												</span>
+										<Show when={notification.kind === 1}>
+											<div class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+												{notification.content}
 											</div>
-											<Show when={notification.kind === 1}>
-												<div class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-													{notification.content}
-												</div>
-											</Show>
-											<Show when={notification.kind === 7}>
-												<div class="text-base">{notification.content || "👍"}</div>
-											</Show>
-											<Show when={notification.kind === 6}>
-												<div class="text-sm text-gray-600 dark:text-gray-400">
-													あなたの投稿をリポストしました
-												</div>
-											</Show>
-										</div>
+										</Show>
+										<Show when={notification.kind === 7}>
+											<div class="text-base">{notification.content || "👍"}</div>
+										</Show>
+										<Show when={notification.kind === 6}>
+											<div class="text-sm text-gray-600 dark:text-gray-400">
+												あなたの投稿をリポストしました
+											</div>
+										</Show>
 									</div>
 								</div>
-							)}
-						</VList>
-					</div>
+							</div>
+						)}
+					</VList>
+				</div>
 
-					<Show when={loading()}>
-						<div class="mt-4 text-center">
-							<div class="inline-block w-6 h-6 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
-						</div>
-					</Show>
+				<Show when={loading()}>
+					<div class="mt-4 text-center">
+						<div class="inline-block w-6 h-6 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+					</div>
 				</Show>
-			</div>
-		</div>
+			</Show>
+		</AppLayout>
 	);
 };
 
