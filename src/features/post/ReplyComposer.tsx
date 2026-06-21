@@ -51,9 +51,7 @@ const ReplyComposer: Component<ReplyComposerProps> = (props) => {
 			let rootEventId: string | null = null;
 
 			// rootマーカーを持つeタグを探す
-			const rootTag = replyToETags.find(
-				(tag: string[]) => tag[3] === "root",
-			);
+			const rootTag = replyToETags.find((tag: string[]) => tag[3] === "root");
 			if (rootTag) {
 				rootEventId = rootTag[1];
 			} else if (replyToETags.length > 0) {
@@ -64,13 +62,17 @@ const ReplyComposer: Component<ReplyComposerProps> = (props) => {
 				rootEventId = props.replyTo.id;
 			}
 
-			// rootイベントへの参照を追加（rootEventIdが現在のreplyToと異なる場合のみ）
-			if (rootEventId && rootEventId !== props.replyTo.id) {
+			// NIP-10準拠: トップレベルリプライとスレッド内リプライを区別
+			if (rootEventId === props.replyTo.id || !rootEventId) {
+				// トップレベルリプライ（rootに直接返信）: rootマーカーのみ
+				// NIP-10: "For top level replies (those replying directly to the root event),
+				// only the 'root' marker should be used."
+				tags.push(["e", props.replyTo.id, "", "root", props.replyTo.pubkey]);
+			} else {
+				// スレッド内のリプライ: rootとreply両方
 				tags.push(["e", rootEventId, "", "root"]);
+				tags.push(["e", props.replyTo.id, "", "reply", props.replyTo.pubkey]);
 			}
-
-			// 直接の親イベント（リプライ対象）への参照を追加
-			tags.push(["e", props.replyTo.id, "", "reply"]);
 
 			// 2. "p"タグの構築
 			// リプライ対象の作成者を追加
@@ -125,9 +127,7 @@ const ReplyComposer: Component<ReplyComposerProps> = (props) => {
 	return (
 		<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
 			<div class="mb-2 text-sm text-gray-600 dark:text-gray-400">
-				<span class="font-medium">
-					{props.replyTo.pubkey.slice(0, 8)}...
-				</span>{" "}
+				<span class="font-medium">{props.replyTo.pubkey.slice(0, 8)}...</span>{" "}
 				へのリプライ
 			</div>
 
