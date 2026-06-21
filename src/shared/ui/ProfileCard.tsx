@@ -1,11 +1,14 @@
 import { For, Show } from "solid-js";
 import type { AKAProfile } from "../../services/nostr/nips/nip39";
 import { getPlatformDisplay } from "../../services/nostr/nips/nip39";
+import RichContent from "./RichContent";
 
 interface ProfileCardProps {
 	profile: AKAProfile | null | undefined;
 	pubkey: string;
 	compact?: boolean;
+	// Optional: Pass raw event tags for emoji support in name/about
+	tags?: string[][];
 }
 
 /**
@@ -72,7 +75,13 @@ export default function ProfileCard(props: ProfileCardProps) {
 						<h3
 							class={`${props.compact ? "text-base" : "text-lg"} font-semibold text-gray-900 dark:text-white truncate`}
 						>
-							{displayName()}
+							<Show when={props.tags} fallback={<span>{displayName()}</span>}>
+								<RichContent
+									content={displayName()}
+									tags={props.tags || []}
+									class="inline"
+								/>
+							</Show>
 						</h3>
 						{/* NIP-05 Verification */}
 						<Show when={props.profile?.nip05}>
@@ -95,9 +104,20 @@ export default function ProfileCard(props: ProfileCardProps) {
 					<Show when={!props.compact}>
 						{/* About */}
 						<Show when={props.profile?.about}>
-							<p class="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
-								{props.profile?.about}
-							</p>
+							<Show
+								when={props.tags}
+								fallback={
+									<p class="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+										{props.profile?.about}
+									</p>
+								}
+							>
+								<RichContent
+									content={props.profile?.about || ""}
+									tags={props.tags || []}
+									class="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2"
+								/>
+							</Show>
 						</Show>
 					</Show>
 

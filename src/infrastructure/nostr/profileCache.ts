@@ -19,6 +19,7 @@ export interface UserProfile {
 	lud06?: string;
 	lud16?: string;
 	website?: string;
+	tags?: string[][]; // NIP-30 emoji tags and other metadata
 }
 
 // In-memory cache: pubkey -> profile
@@ -44,6 +45,7 @@ function parseMetadata(event: NostrEvent): UserProfile | null {
 			lud06: metadata.lud06,
 			lud16: metadata.lud16,
 			website: metadata.website,
+			tags: event.tags, // Include tags for NIP-30 emoji support
 		};
 	} catch (error) {
 		console.warn("Failed to parse metadata:", error);

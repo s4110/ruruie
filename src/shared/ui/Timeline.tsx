@@ -3,17 +3,18 @@ import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { VList, type VListHandle } from "virtua/solid";
 import ReplyComposer from "../../features/post/ReplyComposer";
 import {
-	fetchReactionCount,
-	hasUserReacted,
-	sendReaction,
-	subscribeToReactions,
-} from "../../services/nostr/nips/nip25";
-import {
 	fetchProfiles,
 	getAvatarUrl,
 	getCachedProfile,
 	getDisplayName,
 } from "../../infrastructure/nostr/profileCache";
+import {
+	fetchReactionCount,
+	hasUserReacted,
+	sendReaction,
+	subscribeToReactions,
+} from "../../services/nostr/nips/nip25";
+import RichContent from "./RichContent";
 
 export interface TimelineEvent {
 	id: string;
@@ -90,16 +91,19 @@ const Timeline: Component<TimelineProps> = (props) => {
 				});
 
 				// Subscribe to real-time updates
-				const unsubscribe = subscribeToReactions(event.id, (newCount: number) => {
-					setReactionStates((prev) => {
-						const newMap = new Map(prev);
-						const current = newMap.get(event.id);
-						if (current) {
-							newMap.set(event.id, { ...current, count: newCount });
-						}
-						return newMap;
-					});
-				});
+				const unsubscribe = subscribeToReactions(
+					event.id,
+					(newCount: number) => {
+						setReactionStates((prev) => {
+							const newMap = new Map(prev);
+							const current = newMap.get(event.id);
+							if (current) {
+								newMap.set(event.id, { ...current, count: newCount });
+							}
+							return newMap;
+						});
+					},
+				);
 
 				// Store unsubscribe function
 				subscriptions.set(event.id, unsubscribe);
@@ -251,16 +255,27 @@ const Timeline: Component<TimelineProps> = (props) => {
 									{/* Content */}
 									<div class="flex-1 min-w-0">
 										<div class="flex items-center gap-2 mb-1">
-											<span class="text-sm font-semibold text-gray-900 dark:text-white truncate">
-												{displayName}
-											</span>
+											<div class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+												<Show
+													when={profile?.tags}
+													fallback={<span>{displayName}</span>}
+												>
+													<RichContent
+														content={displayName}
+														tags={profile?.tags || []}
+														class="inline"
+													/>
+												</Show>
+											</div>
 											<span class="text-xs text-gray-500 dark:text-gray-500">
 												{formatTime(event.created_at)}
 											</span>
 										</div>
-										<div class="text-gray-900 dark:text-white whitespace-pre-wrap wrap-break-word">
-											{event.content}
-										</div>
+										<RichContent
+											content={event.content}
+											tags={event.tags}
+											class="text-gray-900 dark:text-white"
+										/>
 
 										{/* Action buttons */}
 										<div class="flex items-center gap-4 mt-2">
