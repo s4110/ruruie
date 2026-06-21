@@ -187,70 +187,120 @@ ruruie/
 
 ### Source Code Structure (`src/`)
 
-**Architecture Decision: Simple Feature-Based Structure**
+**Architecture Decision: Layered Architecture with Clear Separation of Concerns**
 
-This project uses a simple, feature-based directory structure optimized for early-stage development. We explicitly avoid over-engineering with FSD (Feature-Sliced Design) or other complex architectures at this stage.
+<!-- UPDATED: 2026-06-21 - Refactored to layered architecture for better maintainability -->
+
+This project uses a **layered architecture** that separates infrastructure, services, and features for better maintainability, testability, and scalability.
 
 ```
 src/
-├── features/              # Feature modules (create as needed)
-│   ├── feed/             # Example: Feed feature
-│   ├── profile/          # Example: Profile feature
-│   └── messages/         # Example: Messages feature
-├── shared/               # Shared code across features
-│   ├── ui/              # Reusable UI components
-│   ├── nostr/           # Nostr-specific utilities & hooks
-│   │   ├── relays.ts   # Relay connection management
-│   │   ├── events.ts   # Event creation & validation
-│   │   ├── keys.ts     # Key management
-│   │   └── hooks/      # Nostr-related hooks
-│   └── lib/             # General utilities (non-Nostr)
-├── App.tsx              # Main App component
+├── features/              # UI Layer - Feature modules
+│   ├── auth/             # Authentication (LoginPage, authStore)
+│   ├── timeline/         # Timeline views (Home, Global, Notifications)
+│   ├── post/             # Post composition (PostComposer, ReplyComposer)
+│   ├── profile/          # Profile page
+│   └── repost/           # Repost functionality
+│
+├── services/             # Application Layer - Business logic
+│   └── nostr/           # Nostr domain services
+│       ├── nips/        # NIP protocol implementations
+│       │   ├── nip02.ts    # Contact List (kind 3)
+│       │   ├── nip07.ts    # Browser Extension (signing)
+│       │   ├── nip25.ts    # Reactions (kind 7)
+│       │   └── nip39.ts    # External Identities
+│       └── hooks/       # Nostr-related React/Solid hooks
+│           └── useProfile.ts
+│
+├── infrastructure/        # Infrastructure Layer - External systems
+│   └── nostr/           # Nostr relay infrastructure
+│       ├── relayManager.ts         # rx-nostr wrapper (WebSocket management)
+│       ├── profileCache.ts         # Profile caching layer
+│       ├── verificationService.ts  # Event signature verification
+│       └── workers/                # Web Workers for CPU-intensive tasks
+│           └── verificationWorker.ts
+│
+├── shared/               # Shared utilities and components
+│   ├── ui/              # Reusable UI components (Timeline, ProfileCard)
+│   └── types/           # Shared TypeScript type definitions
+│
+├── App.tsx              # Main App component (routing, initialization)
 └── index.tsx            # Application entry point
 ```
 
 ### Architecture Principles
 
-1. **YAGNI (You Aren't Gonna Need It)**
-   - Don't create directories until needed
-   - Start simple, evolve as patterns emerge
-   - Avoid premature optimization
+1. **Layered Architecture**
+   - **features/** → UI Layer: User interfaces, pages, and view components
+   - **services/** → Application Layer: Business logic and NIP protocol implementations
+   - **infrastructure/** → Infrastructure Layer: Communication with external systems (relays)
+   - **shared/** → Shared Layer: Pure shared code and components
 
-2. **Feature Organization**
-   - Each feature is self-contained
-   - Features own their components and hooks
-   - Feature-specific logic stays within feature folder
+2. **Dependency Direction**
+   ```
+   features → services → infrastructure
+   ```
+   - Upper layers depend on lower layers (never inverted)
+   - Makes testing easier (can mock lower layers)
+   - Changes in infrastructure don't affect features
 
-3. **Nostr Code Centralization**
-   - ALL Nostr protocol code goes in `shared/nostr/`
-   - Never duplicate relay/event handling logic
-   - Shared hooks for common Nostr operations
+3. **NIP Implementation Organization**
+   - All NIP implementations live in `services/nostr/nips/`
+   - Each NIP is a separate file (nip02.ts, nip07.ts, nip25.ts, etc.)
+   - Protocol implementations separated from business logic
+   - Easy to add new NIPs: just create `nipXX.ts`
 
-4. **Shared Code Strategy**
-   - `shared/ui/`: Components used by 2+ features
-   - `shared/nostr/`: All Nostr-related code
-   - `shared/lib/`: Generic utilities
+4. **Infrastructure Isolation**
+   - Relay connection management centralized in `infrastructure/nostr/`
+   - Infrastructure changes have minimal blast radius
+   - Service layer doesn't know infrastructure details (rx-nostr, WebSockets, etc.)
 
-### Migration Path
+### Layer Responsibilities
 
-**Current Stage:** Simple structure (recommended for <10 features, <100 files, <3 developers)
+**features/** - UI Layer
+- Components that render UI
+- Page-level components
+- Feature-specific state management
+- User interactions and event handlers
+- Can import from: `services/`, `shared/ui/`, `shared/types/`
 
-**Future Consideration:** Migrate to FSD when:
-- Feature count exceeds 10
-- Team size exceeds 3 developers
-- File count exceeds 100
-- Dependency management becomes complex
+**services/** - Application Layer
+- NIP protocol implementations (pure functions)
+- Business logic and domain rules
+- Nostr-specific hooks (useProfile, etc.)
+- Data transformation and validation
+- Can import from: `infrastructure/`, `shared/types/`
+
+**infrastructure/** - Infrastructure Layer
+- Relay connection management (rx-nostr)
+- WebSocket communication
+- Caching strategies (profileCache)
+- Event verification (workers)
+- External system integrations
+- Can import from: `services/nostr/nips/` (for types), `shared/types/`
+
+**shared/** - Shared Layer
+- UI components used by multiple features
+- Pure utility functions
+- Type definitions
+- No business logic or infrastructure concerns
+
+### Benefits of This Architecture
+
+1. **Testability**: Each layer can be tested independently
+2. **Maintainability**: Clear boundaries reduce cognitive load
+3. **Scalability**: Easy to add new features and NIPs
+4. **Flexibility**: Can swap infrastructure (e.g., different relay library) without affecting features
+5. **Reusability**: NIP implementations can be used across multiple features
 
 ### Anti-Patterns to Avoid
 
-❌ Don't create these directories prematurely:
-- `src/app/` (FSD layer)
-- `src/pages/` (use `features/` instead)
-- `src/widgets/` (FSD layer)
-- `src/entities/` (FSD layer)
-- `src/components/` (ambiguous - use `features/` or `shared/ui/`)
-- `src/hooks/` (organize by domain instead)
-- `src/utils/` (use `shared/lib/` or `shared/nostr/`)
+❌ Don't do these:
+- Import from `features/` in `services/` or `infrastructure/` (circular dependency)
+- Mix business logic with infrastructure (keep relay details in infrastructure/)
+- Duplicate NIP implementations (centralize in `services/nostr/nips/`)
+- Put UI components in `services/` or `infrastructure/`
+- Create `src/utils/` or `src/helpers/` (use proper layers instead)
 
 See [.agents/feature-developer.md](.agents/feature-developer.md) for detailed structure rules.
 

@@ -7,13 +7,13 @@ import {
 	hasUserReacted,
 	sendReaction,
 	subscribeToReactions,
-} from "../../features/reaction/reactionService";
+} from "../../services/nostr/nips/nip25";
 import {
 	fetchProfiles,
 	getAvatarUrl,
 	getCachedProfile,
 	getDisplayName,
-} from "../nostr/profileCache";
+} from "../../infrastructure/nostr/profileCache";
 
 export interface TimelineEvent {
 	id: string;
@@ -90,7 +90,7 @@ const Timeline: Component<TimelineProps> = (props) => {
 				});
 
 				// Subscribe to real-time updates
-				const unsubscribe = subscribeToReactions(event.id, (newCount) => {
+				const unsubscribe = subscribeToReactions(event.id, (newCount: number) => {
 					setReactionStates((prev) => {
 						const newMap = new Map(prev);
 						const current = newMap.get(event.id);

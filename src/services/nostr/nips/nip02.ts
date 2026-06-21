@@ -6,7 +6,7 @@
 import type { NostrEvent } from "nostr-tools/pure";
 import { firstValueFrom } from "rxjs";
 import { createSignal } from "solid-js";
-import { fetchEvent$ } from "./relayManager";
+import { fetchEvent$ } from "../../../infrastructure/nostr/relayManager";
 
 export interface Contact {
 	pubkey: string;

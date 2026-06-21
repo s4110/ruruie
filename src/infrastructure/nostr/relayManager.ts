@@ -13,7 +13,7 @@ import {
 import { firstValueFrom, type Observable } from "rxjs";
 import { first, map, shareReplay, timeout } from "rxjs/operators";
 import { createSignal } from "solid-js";
-import type { SignedEvent } from "./nip07";
+import type { SignedEvent } from "../../services/nostr/nips/nip07";
 
 export type RelayStatus = "connecting" | "connected" | "disconnected" | "error";
 

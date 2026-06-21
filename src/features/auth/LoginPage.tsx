@@ -3,7 +3,7 @@ import { createSignal, onMount, Show } from "solid-js";
 import {
 	hasNostrExtension,
 	waitForNostrExtension,
-} from "../../shared/nostr/nip07";
+} from "../../services/nostr/nips/nip07";
 import { authSignals, login } from "./authStore";
 
 /**

@@ -3,15 +3,15 @@
  * Handles sending and fetching reactions (kind 7 events)
  */
 
-import type { UnsignedEvent } from "../../shared/nostr/nip07";
-import { signEvent } from "../../shared/nostr/nip07";
+import type { UnsignedEvent } from "./nip07";
+import { signEvent } from "./nip07";
 import {
 	fetchEvents$,
 	publishEvent,
 	subscribeToEvents$,
-} from "../../shared/nostr/relayManager";
-import type { TimelineEvent } from "../../shared/ui/Timeline";
-import { getCurrentPubkey } from "../auth/authStore";
+} from "../../../infrastructure/nostr/relayManager";
+import type { TimelineEvent } from "../../../shared/ui/Timeline";
+import { getCurrentPubkey } from "../../../features/auth/authStore";
 
 /**
  * Send a reaction to an event (NIP-25 compliant)

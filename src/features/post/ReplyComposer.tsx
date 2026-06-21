@@ -1,8 +1,8 @@
 import type { Component } from "solid-js";
 import { createSignal, Show } from "solid-js";
-import type { UnsignedEvent } from "../../shared/nostr/nip07";
-import { signEvent } from "../../shared/nostr/nip07";
-import { publishEvent } from "../../shared/nostr/relayManager";
+import type { UnsignedEvent } from "../../services/nostr/nips/nip07";
+import { signEvent } from "../../services/nostr/nips/nip07";
+import { publishEvent } from "../../infrastructure/nostr/relayManager";
 import type { TimelineEvent } from "../../shared/ui/Timeline";
 import { getCurrentPubkey } from "../auth/authStore";
 

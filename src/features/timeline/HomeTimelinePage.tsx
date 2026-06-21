@@ -1,11 +1,11 @@
 import { A } from "@solidjs/router";
 import type { Subscription } from "rxjs";
 import { type Component, createSignal, onCleanup, onMount } from "solid-js";
-import { fetchContactList } from "../../shared/nostr/contactList";
+import { fetchContactList } from "../../services/nostr/nips/nip02";
 import {
 	fetchEvents$,
 	subscribeToEvents$,
-} from "../../shared/nostr/relayManager";
+} from "../../infrastructure/nostr/relayManager";
 import Timeline, { type TimelineEvent } from "../../shared/ui/Timeline";
 import { getUser, logout } from "../auth/authStore";
 import PostComposer from "../post/PostComposer";

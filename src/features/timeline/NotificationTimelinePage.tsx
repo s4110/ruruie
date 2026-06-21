@@ -8,11 +8,11 @@ import {
 	Show,
 } from "solid-js";
 import { VList } from "virtua/solid";
-import { fetchProfile } from "../../shared/nostr/profileCache";
+import { fetchProfile } from "../../infrastructure/nostr/profileCache";
 import {
 	fetchEvents$,
 	subscribeToEvents$,
-} from "../../shared/nostr/relayManager";
+} from "../../infrastructure/nostr/relayManager";
 import type { TimelineEvent } from "../../shared/ui/Timeline";
 import { getUser, logout } from "../auth/authStore";
 

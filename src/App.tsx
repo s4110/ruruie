@@ -7,8 +7,8 @@ import ProfilePage from "./features/profile/ProfilePage";
 import GlobalTimelinePage from "./features/timeline/GlobalTimelinePage";
 import HomeTimelinePage from "./features/timeline/HomeTimelinePage";
 import NotificationTimelinePage from "./features/timeline/NotificationTimelinePage";
-import { initializeRelays } from "./shared/nostr/relayManager";
-import { initializeVerificationService } from "./shared/nostr/verificationService";
+import { initializeRelays } from "./infrastructure/nostr/relayManager";
+import { initializeVerificationService } from "./infrastructure/nostr/verificationService";
 
 function App() {
 	const [authInitialized, setAuthInitialized] = createSignal(false);

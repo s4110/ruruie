@@ -1,6 +1,6 @@
 import { type Component, createSignal, Show } from "solid-js";
-import { signEvent } from "../../shared/nostr/nip07";
-import { publishEvent } from "../../shared/nostr/relayManager";
+import { signEvent } from "../../services/nostr/nips/nip07";
+import { publishEvent } from "../../infrastructure/nostr/relayManager";
 
 interface PostComposerProps {
 	onPostSuccess?: () => void;

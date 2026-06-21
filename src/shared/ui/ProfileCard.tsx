@@ -1,6 +1,6 @@
 import { For, Show } from "solid-js";
-import type { AKAProfile } from "../nostr/nip39";
-import { getPlatformDisplay } from "../nostr/nip39";
+import type { AKAProfile } from "../../services/nostr/nips/nip39";
+import { getPlatformDisplay } from "../../services/nostr/nips/nip39";
 
 interface ProfileCardProps {
 	profile: AKAProfile | null | undefined;

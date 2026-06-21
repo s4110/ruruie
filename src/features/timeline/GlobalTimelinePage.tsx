@@ -4,7 +4,7 @@ import { type Component, createSignal, onCleanup, onMount } from "solid-js";
 import {
 	fetchEvents$,
 	subscribeToEvents$,
-} from "../../shared/nostr/relayManager";
+} from "../../infrastructure/nostr/relayManager";
 import Timeline, { type TimelineEvent } from "../../shared/ui/Timeline";
 import { logout } from "../auth/authStore";
 import PostComposer from "../post/PostComposer";

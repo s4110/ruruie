@@ -1,6 +1,6 @@
 import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { useProfile } from "../../shared/nostr/hooks/useProfile";
+import { useProfile } from "../../services/nostr/hooks/useProfile";
 import ProfileCard from "../../shared/ui/ProfileCard";
 import { authSignals, logout } from "../auth/authStore";
 

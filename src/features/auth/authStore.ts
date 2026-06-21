@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 import {
 	getPublicKey,
 	waitForNostrExtension,
-} from "../../shared/nostr/nip07";
+} from "../../services/nostr/nips/nip07";
 
 /**
  * Authentication state and actions

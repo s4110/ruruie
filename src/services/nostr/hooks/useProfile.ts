@@ -1,6 +1,9 @@
 import { createResource, type Resource } from "solid-js";
-import { type AKAProfile, combineProfileWithIdentities } from "../nip39";
-import { fetchEventFromRelays, fetchEventsFromRelays } from "../relayManager";
+import { type AKAProfile, combineProfileWithIdentities } from "../nips/nip39";
+import {
+	fetchEventFromRelays,
+	fetchEventsFromRelays,
+} from "../../../infrastructure/nostr/relayManager";
 
 /**
  * Fetch profile metadata (kind 0) for a given pubkey
