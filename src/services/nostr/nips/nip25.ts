@@ -3,15 +3,15 @@
  * Handles sending and fetching reactions (kind 7 events)
  */
 
-import type { UnsignedEvent } from "./nip07";
-import { signEvent } from "./nip07";
+import { getCurrentPubkey } from "../../../features/auth/authStore";
 import {
 	fetchEvents$,
 	publishEvent,
 	subscribeToEvents$,
 } from "../../../infrastructure/nostr/relayManager";
 import type { TimelineEvent } from "../../../shared/ui/Timeline";
-import { getCurrentPubkey } from "../../../features/auth/authStore";
+import type { UnsignedEvent } from "./nip07";
+import { signEvent } from "./nip07";
 
 /**
  * Send a reaction to an event (NIP-25 compliant)
@@ -80,7 +80,7 @@ export async function fetchReactionCount(
 			"#e": [eventId],
 		}).subscribe({
 			next: (event) => {
-				if (event && event.id) {
+				if (event?.id) {
 					reactions.add(event.id);
 				}
 			},
@@ -181,7 +181,7 @@ export function subscribeToReactions(
 		"#e": [eventId],
 	}).subscribe({
 		next: (event) => {
-			if (event && event.id) {
+			if (event?.id) {
 				reactions.add(event.id);
 				onReactionUpdate(reactions.size);
 			}
