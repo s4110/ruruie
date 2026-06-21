@@ -1,9 +1,10 @@
 import type { Component } from "solid-js";
-import { For, Show } from "solid-js";
+import { createResource, For, Show } from "solid-js";
 import {
 	type ContentToken,
 	parseNostrContent,
 } from "../../services/nostr/contentParser";
+import { fetchOGP } from "../../services/ogp/ogpFetcher";
 
 interface RichContentProps {
 	content: string;
@@ -12,13 +13,56 @@ interface RichContentProps {
 }
 
 /**
+ * Link Preview component with favicon and title
+ */
+const LinkPreview: Component<{ url: string }> = (props) => {
+	const [ogp] = createResource(() => props.url, fetchOGP);
+
+	return (
+		<Show
+			when={ogp() !== null && ogp()?.title}
+			fallback={
+				<a
+					href={props.url}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-blue-600 dark:text-blue-400 hover:underline break-all"
+				>
+					{props.url}
+				</a>
+			}
+		>
+			<a
+				href={props.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline max-w-full"
+			>
+				<Show when={ogp()?.favicon}>
+					<img
+						src={ogp()?.favicon}
+						alt=""
+						class="w-4 h-4 flex-shrink-0"
+						onError={(e) => {
+							e.currentTarget.style.display = "none";
+						}}
+					/>
+				</Show>
+				<span class="truncate">{ogp()?.title}</span>
+			</a>
+		</Show>
+	);
+};
+
+/**
  * RichContent component
  *
  * Renders Nostr event content with support for:
  * - NIP-30: Custom emojis
  * - NIP-27: Mentions (future)
- * - Images/Videos (future)
- * - Links (future)
+ * - Links with favicon and title preview
+ * - Images (auto-detected by file extension)
+ * - Videos (future)
  */
 const RichContent: Component<RichContentProps> = (props) => {
 	const tokens = () => parseNostrContent(props.content, props.tags);
@@ -46,26 +90,26 @@ const RichContent: Component<RichContentProps> = (props) => {
 				);
 
 			case "link":
-				// Future: Link rendering
-				return (
-					<a
-						href={token.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-blue-600 dark:text-blue-400 hover:underline"
-					>
-						{token.url}
-					</a>
-				);
+				return <LinkPreview url={token.url} />;
 
 			case "image":
-				// Future: Image rendering
 				return (
 					<img
 						src={token.url}
 						alt={token.alt || ""}
-						class="max-w-full rounded-lg my-2"
+						class="max-w-full rounded-lg my-2 block"
 						loading="lazy"
+						onError={(e) => {
+							// Fallback to link if image fails to load
+							const link = document.createElement("a");
+							link.href = token.url;
+							link.target = "_blank";
+							link.rel = "noopener noreferrer";
+							link.className =
+								"text-blue-600 dark:text-blue-400 hover:underline";
+							link.textContent = token.url;
+							e.currentTarget.replaceWith(link);
+						}}
 					/>
 				);
 

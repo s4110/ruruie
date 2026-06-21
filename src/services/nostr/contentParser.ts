@@ -45,7 +45,8 @@ const TokenKind = {
 	Word: 1,
 	Whitespace: 2,
 	Newline: 3,
-	Special: 4,
+	Url: 4,
+	Special: 5,
 } as const;
 
 type TokenKind = (typeof TokenKind)[keyof typeof TokenKind];
@@ -54,11 +55,13 @@ type TokenKind = (typeof TokenKind)[keyof typeof TokenKind];
  * Lexer definition for content parsing
  */
 const lexer = buildLexer([
+	// URL must come before Colon and Word to match complete URLs
+	[true, /^https?:\/\/[^\s]+/g, TokenKind.Url],
 	[true, /^:/g, TokenKind.Colon],
 	[true, /^[a-zA-Z0-9_-]+/g, TokenKind.Word],
-	[true, /^[ \t]+/g, TokenKind.Whitespace],
+	[true, /^[ \t\u3000]+/g, TokenKind.Whitespace], // Include full-width space (U+3000)
 	[true, /^\n/g, TokenKind.Newline],
-	[true, /^[^:a-zA-Z0-9_\s\n-]+/g, TokenKind.Special], // Other characters
+	[true, /^./g, TokenKind.Special], // Any other character (catch-all)
 ]);
 
 /**
@@ -86,6 +89,31 @@ export function extractCustomEmojis(tags: string[][]): Map<string, string> {
  */
 interface ParserContext {
 	emojiMap: Map<string, string>;
+}
+
+/**
+ * Check if URL is an image based on file extension
+ */
+function isImageUrl(url: string): boolean {
+	const imageExtensions = [
+		".jpg",
+		".jpeg",
+		".png",
+		".gif",
+		".webp",
+		".bmp",
+		".svg",
+		".avif",
+	];
+
+	try {
+		const urlObj = new URL(url);
+		const pathname = urlObj.pathname.toLowerCase();
+		return imageExtensions.some((ext) => pathname.endsWith(ext));
+	} catch {
+		// Invalid URL
+		return false;
+	}
 }
 
 /**
@@ -149,6 +177,31 @@ export function parseContent(
 	while (i < tokenList.length) {
 		const token = tokenList[i];
 
+		// Check for URL token
+		if (token.kind === TokenKind.Url) {
+			// Flush accumulated text
+			if (currentText) {
+				tokens.push({ type: "text", content: currentText });
+				currentText = "";
+			}
+
+			// Check if URL is an image
+			if (isImageUrl(token.text)) {
+				tokens.push({
+					type: "image",
+					url: token.text,
+				});
+			} else {
+				tokens.push({
+					type: "link",
+					url: token.text,
+				});
+			}
+
+			i++;
+			continue;
+		}
+
 		// Try to match emoji pattern starting with ':'
 		if (token.kind === TokenKind.Colon && i + 2 < tokenList.length) {
 			const emojiTokens = tokenList.slice(i, i + 3);
@@ -174,7 +227,7 @@ export function parseContent(
 			}
 		}
 
-		// Not an emoji, accumulate as text
+		// Not an emoji or link, accumulate as text
 		currentText += token.text;
 		i++;
 	}
