@@ -14,6 +14,7 @@
     "rx-nostr": "^3.7.4",
     "rxjs": "^7.8.2",
     "solid-js": "^1.9.12",
+    "typescript-parsec": "^0.3.4",
     "virtua": "^0.49.1"
   },
   "devDependencies": {
