@@ -14,6 +14,7 @@ import {
 	subscribeToEvents$,
 } from "../infrastructure/nostr/relayManager";
 import AppLayout from "../shared/ui/AppLayout";
+import RichContent from "../shared/ui/RichContent";
 import type { TimelineEvent } from "../shared/ui/Timeline";
 
 interface NotificationEvent extends TimelineEvent {
@@ -325,14 +326,18 @@ const NotificationTimelinePage: Component = () => {
 											</span>
 										</div>
 										<Show when={notification.kind === 1}>
-											<div class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-												{notification.content}
-											</div>
+											<RichContent
+												content={notification.content}
+												tags={notification.tags}
+												class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2"
+											/>
 										</Show>
 										<Show when={notification.kind === 7}>
-											<div class="text-base">
-												{notification.content || "👍"}
-											</div>
+											<RichContent
+												content={notification.content || "👍"}
+												tags={notification.tags}
+												class="text-base"
+											/>
 										</Show>
 										<Show when={notification.kind === 6}>
 											<div class="text-sm text-gray-600 dark:text-gray-400">
