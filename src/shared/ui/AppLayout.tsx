@@ -12,9 +12,10 @@ interface AppLayoutProps {
 const AppLayout: Component<AppLayoutProps> = (props) => {
 	return (
 		<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-			<div class="max-w-2xl mx-auto p-4">
+			<div class="p-4 flex">
 				<Header />
-				{props.children}
+				<div class="flex-1">{props.children}</div>
+				<aside class="min-w-[15%]">hidari</aside>
 			</div>
 		</div>
 	);

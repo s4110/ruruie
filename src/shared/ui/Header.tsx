@@ -28,11 +28,11 @@ const Header: Component = () => {
 	};
 
 	return (
-		<div class="flex items-center justify-between mb-6">
+		<div class="flex flex-col gap-5 min-w-[15%]">
 			<h1 class="text-2xl font-bold text-purple-600 dark:text-purple-400">
 				ruruie
 			</h1>
-			<div class="flex items-center gap-4">
+			<div class="flex flex-col gap-3">
 				<A href="/" class={linkClass("/")}>
 					ホーム
 				</A>
@@ -48,7 +48,7 @@ const Header: Component = () => {
 				<button
 					type="button"
 					onClick={handleLogout}
-					class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+					class="px-4 py-2 text-sm text-left text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
 				>
 					ログアウト
 				</button>
