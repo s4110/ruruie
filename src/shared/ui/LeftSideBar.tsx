@@ -3,10 +3,10 @@ import type { Component } from "solid-js";
 import { logout } from "../../features/auth/authStore";
 
 /**
- * Common navigation header component
+ * Common navigation component
  * Displays app logo and navigation links
  */
-const Header: Component = () => {
+const LeftSideBar: Component = () => {
 	const location = useLocation();
 
 	const handleLogout = () => {
@@ -57,4 +57,4 @@ const Header: Component = () => {
 	);
 };
 
-export default Header;
+export default LeftSideBar;

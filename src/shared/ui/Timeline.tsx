@@ -1,6 +1,6 @@
 import type { Accessor, Component } from "solid-js";
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
-import { VList, type VListHandle } from "virtua/solid";
+import { WindowVirtualizer, type WindowVirtualizerHandle } from "virtua/solid";
 import ReplyComposer from "../../features/post/ReplyComposer";
 import {
 	fetchProfiles,
@@ -33,8 +33,8 @@ interface TimelineProps {
 }
 
 const Timeline: Component<TimelineProps> = (props) => {
-	let vlistHandle: VListHandle | undefined;
-	const [isAtTop, setIsAtTop] = createSignal(true);
+	let vlistHandle: WindowVirtualizerHandle | undefined;
+	const [_isAtTop, setIsAtTop] = createSignal(true);
 	const [, setProfilesLoaded] = createSignal(0); // Trigger re-render when profiles load
 	const [replyingToId, setReplyingToId] = createSignal<string | null>(null);
 
@@ -162,17 +162,22 @@ const Timeline: Component<TimelineProps> = (props) => {
 		}
 	};
 
-	const handleScroll = (offset: number) => {
+	const handleScroll = () => {
 		if (!vlistHandle) return;
 
+		// Get current scroll offset from handle
+		const scrollOffset = vlistHandle.scrollOffset;
+
 		// Check if user is at the top (within 50px)
-		const atTop = offset <= 50;
+		const atTop = scrollOffset <= 50;
 		setIsAtTop(atTop);
 
 		// Check if user scrolled near the bottom for loading more
 		if (props.onLoadMore && !props.loading()) {
+			// WindowVirtualizer uses window scroll, so we get document height
+			const scrollHeight = document.documentElement.scrollHeight;
 			const isAtBottom =
-				offset - vlistHandle.scrollSize + vlistHandle.viewportSize >= -100;
+				scrollOffset + vlistHandle.viewportSize >= scrollHeight - 100;
 
 			if (isAtBottom) {
 				console.log("📍 Reached bottom, triggering load more");
@@ -213,12 +218,10 @@ const Timeline: Component<TimelineProps> = (props) => {
 					</div>
 				}
 			>
-				<VList
+				<WindowVirtualizer
 					ref={(handle) => (vlistHandle = handle)}
 					data={props.events()}
-					style={{ height: "calc(100vh - 16rem)" }}
 					onScroll={handleScroll}
-					shift={!isAtTop()}
 				>
 					{(event: TimelineEvent) => {
 						const profile = getCachedProfile(event.pubkey);
@@ -332,7 +335,7 @@ const Timeline: Component<TimelineProps> = (props) => {
 							</div>
 						);
 					}}
-				</VList>
+				</WindowVirtualizer>
 			</Show>
 
 			{props.loading() && (
